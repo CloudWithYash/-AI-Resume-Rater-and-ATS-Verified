@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Resume Rater & ATS Verified - PDF Upload</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0; padding: 0;
+      background: #f7f9fc;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      color: #333;
+    }
+    .container {
+      background: white;
+      max-width: 760px;
+      width: 95%;
+      margin: 2rem 1rem 3rem;
+      border-radius: 12px;
+      box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+      padding: 2rem 3rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #0078d4;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+    }
+    #drop-zone {
+      border: 3px dashed #0078d4;
+      background: #e7f0fb;
+      width: 100%;
+      padding: 3rem;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: 600;
+      color: #0078d4;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      transition: background 0.3s, box-shadow 0.3s;
+      user-select: none;
+      outline: none;
+    }
+    #drop-zone.hover {
+      background: #d0e6fc;
+      box-shadow: 0 0 20px #30a2ff66;
+    }
+    #drop-zone input[type="file"] {
+      display: none;
+    }
+    button#rate-btn {
+      background: #0078d4;
+      color: white;
+      border: none;
+      padding: 0.85rem 2.5rem;
+      font-size: 1.1rem;
+      border-radius: 30px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 1rem;
+      box-shadow: 0 5px 15px #0078d466;
+      transition: background 0.3s;
+      width: fit-content;
+      align-self: center;
+      user-select: none;
+    }
+    button#rate-btn:disabled {
+      background: #aacdef;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    button#rate-btn:hover:not(:disabled) {
+      background: #005ea2;
+    }
+    .results {
+      margin-top: 2rem;
+      width: 100%;
+      border-top: 1px solid #ddd;
+      padding-top: 1.5rem;
+    }
+    .score {
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #0078d4;
+      text-align: center;
+      margin-bottom: 1rem;
+      user-select: text;
+    }
+    .ats-status {
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      user-select: text;
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .ats-status.pass {
+      background-color: #e0f3e9;
+      color: #2b7a0b;
+      border: 2px solid #2b7a0b;
+    }
+    .ats-status.fail {
+      background-color: #fcebea;
+      color: #b71c1c;
+      border: 2px solid #b71c1c;
+    }
+    .feedback {
+      font-size: 1.1rem;
+      color: #444;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      min-height: 3.5rem;
+      user-select: text;
+    }
+    .feedback ul {
+      padding-left: 1.4rem;
+      margin-top: 0.3rem;
+      margin-bottom: 0;
+      color: #555;
+    }
+    .feedback ul li {
+      margin-bottom: 0.4rem;
+    }
+    .info-block {
+      margin-top: 1.2rem;
+      font-size: 1rem;
+      color: #555;
+    }
+    .info-block strong {
+      color: #0078d4;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 1.5rem 1.8rem 2rem;
+      }
+      button#rate-btn {
+        width: 100%;
+      }
+      #drop-zone {
+        padding: 2rem 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" role="main" aria-label="AI Resume Rater and ATS Verified with PDF Upload">
+    <h1>AI Resume Rater & ATS Verified - Upload Your Resume PDF</h1>
+    <label id="drop-zone" tabindex="0" role="button" aria-describedby="dropzone-desc" aria-label="Drag and drop your resume PDF or click to select it">
+      <span id="dropzone-desc">Drag & drop your resume PDF here, or click to select file</span>
+      <input type="file" accept="application/pdf" id="file-input" aria-label="Upload resume PDF file" />
+    </label>
+
+    <button id="rate-btn" disabled aria-disabled="true">Rate Resume & Check ATS</button>
+
+    <div class="results" id="results" aria-live="polite" aria-atomic="true" hidden>
+      <div class="score" id="score"></div>
+      <div class="ats-status" id="ats-status"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="info-block" id="details-block" hidden>
+        <div><strong>Emails Found:</strong> <span id="emails-list"></span></div>
+        <div><strong>Phone Numbers Found:</strong> <span id="phones-list"></span></div>
+        <div><strong>Skills Found:</strong> <span id="skills-list"></span></div>
+        <div><strong>Education Keywords Found:</strong> <span id="education-list"></span></div>
+        <div><strong>Experience Mentioned:</strong> <span id="experience-status"></span></div>
+        <div><strong>Estimated Word Count:</strong> <span id="word-count"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const rateBtn = document.getElementById('rate-btn');
+    const resultsDiv = document.getElementById('results');
+    const scoreEl = document.getElementById('score');
+    const atsStatusEl = document.getElementById('ats-status');
+    const feedbackEl = document.getElementById('feedback');
+    const detailsBlock = document.getElementById('details-block');
+    const emailsList = document.getElementById('emails-list');
+    const phonesList = document.getElementById('phones-list');
+    const skillsList = document.getElementById('skills-list');
+    const educationList = document.getElementById('education-list');
+    const experienceStatus = document.getElementById('experience-status');
+    const wordCountEl = document.getElementById('word-count');
+
+    let resumeText = '';
+
+    const SKILLS_DB = [
+      'python', 'java', 'machine learning', 'data analysis', 'communication',
+      'teamwork', 'sql', 'aws', 'docker', 'tensorflow', 'javascript',
+      'react', 'git', 'linux', 'excel'
+    ];
+    const EDUCATION_DB = [
+      'bachelor', 'master', 'phd', 'degree', 'university', 'college',
+      'school', 'diploma', 'mba'
+    ];
+    const EMAIL_REGEX = /[\w\.-]+@[\w\.-]+\.\w+/gi;
+    const PHONE_REGEX = /(\+?\d{1,3}[\s-]?)?(\(?\d{3}\)?[\s-]?)?[\d\s-]{7,12}/g;
+
+    function extractEmails(text) {
+      let matches = text.match(EMAIL_REGEX);
+      return matches ? [...new Set(matches)] : [];
+    }
+    function extractPhones(text) {
+      let matches = text.match(PHONE_REGEX);
+      if(!matches) return [];
+      const cleaned = matches.map(p => p.replace(/[^\d+]/g, '')).filter(p => p.length >=7);
+      return [...new Set(cleaned)];
+    }
+    function extractSkills(text) {
+      const textLower = text.toLowerCase();
+      return SKILLS_DB.filter(skill => textLower.includes(skill));
+    }
+    function extractEducation(text) {
+      const textLower = text.toLowerCase();
+      return EDUCATION_DB.filter(edu => textLower.includes(edu));
+    }
+    function hasExperience(text) {
+      const textLower = text.toLowerCase();
+      return textLower.includes('experience') || /\d+\s+(years|yrs)\s+of\s+experience/.test(textLower);
+    }
+
+    // ATS Compliance Checks
+    // Heuristics for ATS compatible resume
+    // 1. Text length for sufficient content (avoid images only)
+    // 2. Presence of email and phone
+    // 3. Absence of many special characters or invisible elements
+    // 4. Simple formatting check (approximate by scanning for presence of weird chars)
+
+    function atsCompliantCheck(text, emails, phones) {
+      const minWords = 200;  // ATS generally fail very short resumes
+      const words = text.trim().split(/\s+/).length;
+      const wordCountPass = words >= minWords;
+
+      const contactPass = emails.length > 0 && phones.length > 0;
+
+      // Check for special/binary chars
+      const weirdChars = text.match(/[\u0000-\u001F\u007F-\u009F]+/g);
+      const noWeirdChars = !weirdChars || weirdChars.length < 5;
+
+      let status = 'Pass';
+      let reasonList = [];
+
+      if(!wordCountPass) {
+        status = 'Fail';
+        reasonList.push('Resume is too short. ATS prefer 1 page min (~200 words).');
+      }
+      if(!contactPass) {
+        status = 'Fail';
+        reasonList.push('Missing valid email or phone number.');
+      }
+      if(!noWeirdChars) {
+        status = 'Fail';
+        reasonList.push('Resume has strange/invisible characters that may prevent parsing.');
+      }
+
+      return {status, reasons: reasonList};
+    }
+
+    function rateResume(text) {
+      let score = 0;
+      const maxScore = 6;
+      const feedback = [];
+
+      const emails = extractEmails(text);
+      const phones = extractPhones(text);
+      const skills = extractSkills(text);
+      const education = extractEducation(text);
+      const experience = hasExperience(text);
+
+      if (emails.length) {
+        score++;
+      } else {
+        feedback.push("Missing or invalid email address.");
+      }
+      if (phones.length) {
+        score++;
+      } else {
+        feedback.push("Missing or invalid phone number.");
+      }
+      if (skills.length >= Math.ceil(SKILLS_DB.length / 3)) {
+        score++;
+      } else {
+        feedback.push("Consider adding more relevant skills.");
+      }
+      if (education.length) {
+        score++;
+      } else {
+        feedback.push("Include your educational qualifications.");
+      }
+      if (experience) {
+        score++;
+      } else {
+        feedback.push("Add your work or project experience details.");
+      }
+
+      if (skills.length >= SKILLS_DB.length / 2) {
+        score++;
+      }
+
+      return {
+        score,
+        maxScore,
+        percentage: Math.round((score / maxScore) * 100),
+        feedback,
+        emails,
+        phones,
+        skills,
+        education,
+        experience,
+        wordCount: text.trim().split(/\s+/).length
+      };
+    }
+
+    async function extractTextFromPDF(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const strings = content.items.map(item => item.str);
+        fullText += strings.join(' ') + '\n';
+      }
+      return fullText;
+    }
+
+    function resetResults() {
+      resultsDiv.hidden = true;
+      scoreEl.textContent = '';
+      atsStatusEl.textContent = '';
+      feedbackEl.textContent = '';
+      detailsBlock.hidden = true;
+      emailsList.textContent = '';
+      phonesList.textContent = '';
+      skillsList.textContent = '';
+      educationList.textContent = '';
+      experienceStatus.textContent = '';
+      wordCountEl.textContent = '';
+      rateBtn.disabled = true;
+      rateBtn.setAttribute('aria-disabled', 'true');
+    }
+
+    // Drag & Drop handlers, file selection handlers
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('hover');
+    });
+    dropZone.addEventListener('dragleave', e => {
+      e.preventDefault();
+      dropZone.classList.remove('hover');
+    });
+    dropZone.addEventListener('drop', async e => {
+      e.preventDefault();
+      dropZone.classList.remove('hover');
+      resetResults();
+
+      const files = e.dataTransfer.files;
+      if (files.length === 0) return;
+      if (files[0].type !== 'application/pdf') {
+        alert('Please drop a PDF file.');
+        return;
+      }
+      fileInput.files = files;
+      await loadAndPrepareFile(files[0]);
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+      resetResults();
+      if (e.target.files.length === 0) return;
+      if (e.target.files[0].type !== 'application/pdf') {
+        alert('Please select a PDF file.');
+        fileInput.value = '';
+        return;
+      }
+      await loadAndPrepareFile(e.target.files[0]);
+    });
+
+    async function loadAndPrepareFile(file) {
+      try {
+        dropZone.textContent = 'Loading and extracting text...';
+        resumeText = await extractTextFromPDF(file);
+        if (resumeText.trim().length < 50) {
+          alert('Could not extract enough text from PDF. Please try another file or a cleaner version.');
+          resetDropZoneText();
+          return;
+        }
+        resetDropZoneText(true);
+        rateBtn.disabled = false;
+        rateBtn.removeAttribute('aria-disabled');
+      } catch (err) {
+        alert('Error reading PDF: ' + err.message);
+        resetDropZoneText();
+      }
+    }
+
+    function resetDropZoneText(ready = false) {
+      dropZone.innerHTML = ready
+        ? 'PDF loaded ✓<br>Click "Rate Resume & Check ATS" to analyze'
+        : 'Drag & drop your resume PDF here, or click to select file';
+    }
+
+    rateBtn.addEventListener('click', () => {
+      if (!resumeText) return;
+      const result = rateResume(resumeText);
+      const atsCheck = atsCompliantCheck(resumeText, result.emails, result.phones);
+
+      scoreEl.textContent = `Score: ${result.score} / ${result.maxScore} (${result.percentage}%)`;
+      
+      atsStatusEl.textContent = `ATS Verification: ${atsCheck.status}`;
+      atsStatusEl.className = 'ats-status ' + (atsCheck.status.toLowerCase());
+
+      if (atsCheck.status === 'Fail') {
+        atsStatusEl.title = atsCheck.reasons.join('\n');
+      } else {
+        atsStatusEl.title = 'Resume passes basic ATS compliance checks.';
+      }
+
+      if (result.feedback.length) {
+        feedbackEl.innerHTML = '<strong>Recommendations:</strong><ul>' +
+          result.feedback.map(f => `<li>${f}</li>`).join('') +
+          '</ul>';
+      } else {
+        feedbackEl.innerHTML = '<strong>Excellent! Your resume covers essential aspects.</strong>';
+      }
+
+      emailsList.textContent = result.emails.length ? result.emails.join(', ') : 'None found';
+      phonesList.textContent = result.phones.length ? result.phones.join(', ') : 'None found';
+      skillsList.textContent = result.skills.length ? result.skills.join(', ') : 'None found';
+      educationList.textContent = result.education.length ? result.education.join(', ') : 'None found';
+      experienceStatus.textContent = result.experience ? 'Yes' : 'No';
+      wordCountEl.textContent = result.wordCount;
+
+      resultsDiv.hidden = false;
+      detailsBlock.hidden = false;
+      rateBtn.focus();
+    });
+  </script>
+</body>
+</html>
